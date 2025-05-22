@@ -3,7 +3,8 @@
 [![Total Downloads](https://poser.pugx.org/needle-project/laravel-rabbitmq/downloads)](https://packagist.org/packages/needle-project/laravel-rabbitmq)
 
 # Laravel RabbitMQ
-A simple rabbitmq library for laravel based on Publish–Subscribe pattern where the subscriber is the Consumer.
+This package is a fork of [needle-project/laravel-rabbitmq](https://github.com/needle-project/laravel-rabbitmq), created to maintain and improve the library as the original has not been updated for some time.
+It provides a simple RabbitMQ integration for Laravel based on the Publish–Subscribe pattern, where the subscriber acts as the Consumer.
 
 # Table of Contents
 1. [Install](#1-install)

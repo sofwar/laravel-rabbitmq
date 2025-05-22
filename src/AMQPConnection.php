@@ -1,8 +1,11 @@
 <?php
+
 namespace NeedleProject\LaravelRabbitMq;
 
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
+use PhpAmqpLib\Connection\AMQPConnectionFactory;
 use PhpAmqpLib\Connection\AMQPSocketConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 
@@ -18,41 +21,58 @@ class AMQPConnection
      * @const array Default connections parameters
      */
     const DEFAULTS = [
-        'hostname'           => '127.0.0.1',
-        'port'               => 5672,
-        'username'           => 'guest',
-        'password'           => 'guest',
-        'vhost'              => '/',
+        'hostname' => '127.0.0.1',
+        'port' => 5672,
+        'username' => 'guest',
+        'password' => 'guest',
+        'vhost' => '/',
 
         # whether the connection should be lazy
-        'lazy'               => true,
+        'lazy' => true,
+
+        'insist' => false,
 
         # More info about timeouts can be found on https://www.rabbitmq.com/networking.html
-        'read_write_timeout'   => 3,   // default timeout for writing/reading (in seconds)
-        'connect_timeout'      => 3,
-        'heartbeat'            => 0,
-        'keep_alive'           => false
+        'read_write_timeout' => 3,   // default timeout for writing/reading (in seconds)
+        'connect_timeout' => 3,
+        'channel_rpc_timeout' => 0,
+        'heartbeat' => 0,
+        'keep_alive' => false,
+
+        'connection_name' => '',
+
+        'io_type' => AMQPConnectionConfig::IO_TYPE_STREAM,
+
+        'secure' => false,
+        'ssl_crypto_method' => STREAM_CRYPTO_METHOD_ANY_CLIENT,
+        'ssl_verify' => false,
+        'ssl_verify_name' => false,
+
+        'locale' => 'en_US',
+
+        'login_method' => AMQPConnectionConfig::AUTH_AMQPPLAIN,
+        'login_response' => null,
     ];
 
     /**
      * @var array
      */
-    protected $connectionDetails = [];
+    protected array $connectionDetails = [];
 
     /**
      * @var string
      */
-    protected $aliasName = '';
+    protected string $aliasName = '';
 
     /**
      * @var null|AbstractConnection
      */
-    private $connection = null;
+    private ?AbstractConnection $connection = null;
 
     /**
      * @var null|AMQPChannel
      */
-    private $channel = null;
+    private ?AMQPChannel $channel = null;
 
     /**
      * @param string $aliasName
@@ -65,7 +85,7 @@ class AMQPConnection
             throw new \InvalidArgumentException(
                 sprintf(
                     "Cannot create connection %s, received unknown arguments: %s!",
-                    (string)$aliasName,
+                    (string) $aliasName,
                     implode(', ', $diff)
                 )
             );
@@ -87,7 +107,8 @@ class AMQPConnection
     {
         $this->aliasName = $aliasName;
         $this->connectionDetails = $connectionDetails;
-        if (isset($connectionDetails['lazy']) &&  $connectionDetails['lazy'] === false) {
+
+        if (isset($connectionDetails['lazy']) && $connectionDetails['lazy'] === false) {
             // dummy call
             $this->getConnection();
         }
@@ -99,69 +120,104 @@ class AMQPConnection
     protected function getConnection(): AbstractConnection
     {
         if (is_null($this->connection)) {
-            if (!isset($this->connectionDetails['type'])) {
-                $this->connectionDetails['type'] = AMQPStreamConnection::class;
-            }
-            switch ($this->connectionDetails['type']) {
-                case AMQPStreamConnection::class:
-                case 'stream':
-                    $type = AMQPStreamConnection::class;
-                    break;
-                default:
-                    $type = AMQPSocketConnection::class;
-            }
-
-            $this->connection = $this->createConnectionByType($type);
+            $this->connection = $this->createConnectionByType();
         }
+
         return $this->connection;
     }
 
-    /**
-     * @param $type
-     * @return mixed
-     */
-    private function createConnectionByType($type)
+    private function createConnectionByType(): AbstractConnection
     {
-        return new $type(
-            $this->connectionDetails['hostname'],
-            $this->connectionDetails['port'],
-            $this->connectionDetails['username'],
-            $this->connectionDetails['password'],
-            $this->connectionDetails['vhost'],
-            /** insist */
-            false,
-            /** login method */
-            'AMQPLAIN',
-            /** login_response */
-            null,
-            /** locale */
-            'en_US',
-            $this->connectionDetails['connect_timeout'],
-            $this->connectionDetails['read_write_timeout'],
-            null,
-            $this->connectionDetails['keep_alive'],
-            $this->connectionDetails['heartbeat']
-        );
+        $config = new AMQPConnectionConfig();
+
+        $config->setHost($this->connectionDetails['hostname']);
+        $config->setPort($this->connectionDetails['port']);
+        $config->setUser($this->connectionDetails['username']);
+        $config->setPassword($this->connectionDetails['password']);
+        $config->setVhost($this->connectionDetails['vhost']);
+
+        if (!empty($this->connectionDetails['io_type'])) {
+            $config->setIoType($this->connectionDetails['io_type']);
+        }
+
+        if (!empty($this->connectionDetails['connection_name'])) {
+            $config->setConnectionName($this->connectionDetails['connection_name']);
+        }
+
+        if (isset($this->connectionDetails['connect_timeout'])) {
+            $config->setConnectionTimeout((float)$this->connectionDetails['connect_timeout']);
+        }
+
+        if (isset($this->connectionDetails['read_write_timeout'])) {
+            $config->setReadTimeout((float)$this->connectionDetails['read_write_timeout']);
+            $config->setWriteTimeout((float)$this->connectionDetails['read_write_timeout']);
+
+        }
+
+        if (isset($this->connectionDetails['channel_rpc_timeout'])) {
+            $config->setChannelRPCTimeout((float)$this->connectionDetails['channel_rpc_timeout']);
+        }
+
+        if (isset($this->connectionDetails['keep_alive'])) {
+            $config->setKeepalive((bool)$this->connectionDetails['keep_alive']);
+        }
+
+        if (isset($this->connectionDetails['heartbeat'])) {
+            $config->setHeartbeat((int)$this->connectionDetails['heartbeat']);
+        }
+
+        if (isset($this->connectionDetails['secure'])) {
+            $config->setIsSecure((bool)$this->connectionDetails['secure']);
+        }
+
+        if (isset($this->connectionDetails['ssl_crypto_method'])) {
+            $config->setSslCryptoMethod($this->connectionDetails['ssl_crypto_method']);
+        }
+
+        if (isset($this->connectionDetails['ssl_verify_name'])) {
+            $config->setSslVerifyName((bool)$this->connectionDetails['ssl_verify_name']);
+        }
+
+        if (isset($this->connectionDetails['ssl_verify'])) {
+            $config->setSslVerify((bool)$this->connectionDetails['ssl_verify']);
+        }
+
+        if (isset($this->connectionDetails['lazy'])) {
+            $config->setIsLazy((bool)$this->connectionDetails['lazy']);
+        }
+
+        if (isset($this->connectionDetails['insist'])) {
+            $config->setInsist((bool)$this->connectionDetails['insist']);
+        }
+
+        if (!empty($this->connectionDetails['locale'])) {
+            $config->setLocale($this->connectionDetails['locale']);
+        }
+
+        if (!empty($this->connectionDetails['login_response'])) {
+            $config->setLoginResponse($this->connectionDetails['login_response']);
+        }
+
+        return AMQPConnectionFactory::create($config);
     }
 
     /**
      * Reconnect
      */
-    public function reconnect()
+    public function reconnect(): void
     {
         $this->getConnection()->channel()->close();
         $this->channel = null;
         $this->getConnection()->reconnect();
     }
 
-    /**
-     * @return \PhpAmqpLib\Channel\AMQPChannel
-     */
-    public function getChannel()
+
+    public function getChannel(): ?AMQPChannel
     {
         if (is_null($this->channel)) {
             $this->channel = $this->getConnection()->channel();
         }
+
         return $this->channel;
     }
 
