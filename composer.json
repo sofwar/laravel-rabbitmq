@@ -16,7 +16,7 @@
     ],
     "require": {
         "php": "7.*|8.*",
-        "php-amqplib/php-amqplib": "^3.*"
+        "php-amqplib/php-amqplib": "3.*"
     },
     "require-dev": {
         "phpunit/phpunit": "9.*|10.*",

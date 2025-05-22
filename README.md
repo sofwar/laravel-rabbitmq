@@ -1,6 +1,6 @@
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/needle-project/laravel-rabbitmq/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/needle-project/laravel-rabbitmq/?branch=master)
-[![Code Coverage](https://scrutinizer-ci.com/g/needle-project/laravel-rabbitmq/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/needle-project/laravel-rabbitmq/?branch=master)
-[![Total Downloads](https://poser.pugx.org/needle-project/laravel-rabbitmq/downloads)](https://packagist.org/packages/needle-project/laravel-rabbitmq)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/sofwar/laravel-rabbitmq/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/sofwar/laravel-rabbitmq/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/sofwar/laravel-rabbitmq/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/sofwar/laravel-rabbitmq/?branch=master)
+[![Total Downloads](https://poser.pugx.org/sofwar/laravel-rabbitmq/downloads)](https://packagist.org/packages/sofwar/laravel-rabbitmq)
 
 # Laravel RabbitMQ
 This package is a fork of [needle-project/laravel-rabbitmq](https://github.com/needle-project/laravel-rabbitmq), created to maintain and improve the library as the original has not been updated for some time.
